@@ -9,6 +9,7 @@ from .service import Service
 
 class ServiceNode(MPTTModel):
     id = models.IntegerField(primary_key=True)  # id of ontologytree
+    ext_id = models.CharField(db_index=True, max_length=200, blank=True)
     name = models.CharField(max_length=200, db_index=True)
     parent = TreeForeignKey('self', null=True, related_name='children')
     unit_count = models.PositiveIntegerField(null=True)
