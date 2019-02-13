@@ -4,7 +4,7 @@ import logging
 from django.core.management.base import BaseCommand
 from django.contrib.gis.gdal import DataSource
 from django.contrib.gis.gdal.error import GDALException
-from django.contrib.gis.geos import GeometryCollection, LineString, MultiLineString, Polygon, MultiPolygon
+from django.contrib.gis.geos import LineString, MultiLineString, Polygon, MultiPolygon
 
 from services.models.unit_identifier import UnitIdentifier
 
@@ -176,12 +176,8 @@ class Command(BaseCommand):
         logger.info('Updating geometries in the database...')
         for lipas_id, geometry in geometries.items():
             unit = units_by_lipas_id[lipas_id]
-            # Try to simplify our geometries
-            if isinstance(geometry, MultiLineString):
-                unit.geometry = geometry.merged
-            elif isinstance(geometry, MultiPolygon):
-                unit.geometry = geometry.unary_union
-            else:
-                unit.geometry = geometry
-
+            # FIXME: make sports map UI support simplified
+            # geometries and bring back simplification
+            # from commit 6cff46e0399fedbbc8266efa5230cd4ccb8a8485
+            unit.geometry = geometry
             unit.save()

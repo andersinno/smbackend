@@ -2,6 +2,7 @@ from django.core.validators import validate_comma_separated_integer_list
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import JSONField
 from django.utils.translation import ugettext_noop as _
+from django.apps import apps
 
 from munigeo.models import Municipality
 from munigeo.utils import get_default_srid
@@ -9,6 +10,8 @@ from munigeo.utils import get_default_srid
 from services.utils import get_translated
 from .department import Department
 from .keyword import Keyword
+
+from django.contrib.postgres.fields import HStoreField
 
 
 PROJECTION_SRID = get_default_srid()
@@ -57,14 +60,29 @@ CONTRACT_TYPES = (
 )
 
 
+_unit_related_fields = set()
+
+
+def get_unit_related_fields():
+    global _unit_related_fields
+    if len(_unit_related_fields) > 0:
+        return _unit_related_fields
+    Unit = apps.get_model(app_label='services', model_name='Unit')
+    for f in Unit._meta.get_fields():
+        if f.is_relation:
+            _unit_related_fields.add(f.name)
+    return _unit_related_fields
+
+
 class UnitSearchManager(models.GeoManager):
     def get_queryset(self):
         qs = super(UnitSearchManager, self).get_queryset()
         if self.only_fields:
             qs = qs.only(*self.only_fields)
         if self.include_fields:
+            unit_related_fields = get_unit_related_fields()
             for f in self.include_fields:
-                if f != 'services':
+                if f in unit_related_fields:
                     qs = qs.prefetch_related(f)
         return qs.filter(public=True)
 
@@ -80,7 +98,7 @@ class Unit(models.Model):
     root_department = models.ForeignKey(Department, null=True, related_name='descendant_units')
 
     organizer_type = models.PositiveSmallIntegerField(choices=ORGANIZER_TYPES, null=True)
-    organizer_name = models.CharField(max_length=100, null=True)
+    organizer_name = models.CharField(max_length=150, null=True)
     organizer_business_id = models.CharField(max_length=10, null=True)
 
     provider_type = models.PositiveSmallIntegerField(choices=PROVIDER_TYPES, null=True)
@@ -101,7 +119,7 @@ class Unit(models.Model):
 
     picture_caption = models.TextField(null=True)
 
-    phone = models.CharField(max_length=70, null=True)
+    phone = models.CharField(max_length=120, null=True)
     fax = models.CharField(max_length=50, null=True)
     email = models.EmailField(max_length=100, null=True)
     accessibility_phone = models.CharField(max_length=50, null=True)
@@ -114,7 +132,7 @@ class Unit(models.Model):
     address_zip = models.CharField(max_length=10, null=True)
 
     data_source = models.CharField(max_length=30, null=True)
-    # extensions = HStoreField(null=True)
+    extensions = HStoreField(null=True)
 
     last_modified_time = models.DateTimeField(db_index=True, help_text='Time of last modification')
 

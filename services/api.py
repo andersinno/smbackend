@@ -56,9 +56,9 @@ def register_view(klass, name, base_name=None):
         entry['base_name'] = base_name
     all_views.append(entry)
 
-    if (klass.serializer_class and
-            hasattr(klass.serializer_class, 'Meta') and
-            hasattr(klass.serializer_class.Meta, 'model')):
+    if (klass.serializer_class
+            and hasattr(klass.serializer_class, 'Meta')
+            and hasattr(klass.serializer_class.Meta, 'model')):
         model = klass.serializer_class.Meta.model
         serializers_by_model[model] = klass.serializer_class
 
@@ -224,7 +224,7 @@ class DepartmentSerializer(TranslatedModelSerializer, MPTTModelSerializer, JSONA
         exclude = ['uuid', ]
 
     def get_uuid(self, obj):
-            return obj.uuid
+        return obj.uuid
 
     def get_parent(self, obj):
         parent = getattr(obj, 'parent')
@@ -251,6 +251,11 @@ class ServiceNodeSerializer(TranslatedModelSerializer, MPTTModelSerializer, JSON
             ancestors = obj.get_ancestors(ascending=True)
             ser = ServiceNodeSerializer(ancestors, many=True, context={'only': ['name']})
             ret['ancestors'] = ser.data
+        if 'related_services' in include_fields:
+            services = obj.related_services
+            ser = ServiceSerializer(services, many=True, context={})
+            ret['related_services'] = ser.data
+
         only_fields = self.context.get('only', [])
         if 'parent' in only_fields:
             ret['parent'] = int(obj.parent_id) if SERVICE_NODE_INT_ID else obj.parent_id
@@ -277,25 +282,30 @@ class ServiceNodeSerializer(TranslatedModelSerializer, MPTTModelSerializer, JSON
 class ServiceSerializer(TranslatedModelSerializer, JSONAPISerializer):
     def to_representation(self, obj):
         ret = super(ServiceSerializer, self).to_representation(obj)
+        ret['unit_count'] = {}
         if hasattr(obj, 'unit_count'):
             ret.setdefault('unit_count', {})['total'] = obj.unit_count
         return ret
 
     class Meta:
         model = Service
-        fields = ['name', 'id', 'period_enabled', 'clarification_enabled', 'keywords']
+        fields = [
+            'name', 'id', 'period_enabled', 'clarification_enabled', 'keywords',
+            'root_service_node']
 
 
 class RelatedServiceSerializer(TranslatedModelSerializer, JSONAPISerializer):
     class Meta:
         model = Service
-        fields = ['name']
+        fields = ['name', 'root_service_node']
 
 
 class ServiceDetailsSerializer(TranslatedModelSerializer, JSONAPISerializer):
     def to_representation(self, obj):
         ret = super(ServiceDetailsSerializer, self).to_representation(obj)
-        ret['name'] = RelatedServiceSerializer(obj.service).data['name']
+        service_data = RelatedServiceSerializer(obj.service).data
+        ret['name'] = service_data.get('name')
+        ret['root_service_node'] = service_data.get('root_service_node')
         if ret['period_begin_year'] is not None:
             ret['period'] = [ret['period_begin_year'], ret.get('period_end_year')]
         else:
@@ -374,8 +384,8 @@ class DepartmentViewSet(JSONAPIViewSet):
 
         include_hierarchy = request.query_params.get('include_hierarchy')
         data = serializer.data
-        if (include_hierarchy is not None and
-                include_hierarchy.lower() not in ['no', 'false', '0']):
+        if (include_hierarchy is not None
+                and include_hierarchy.lower() not in ['no', 'false', '0']):
             hierarchy = drilldown_tree_for_node(dept)
             data['hierarchy'] = self.serializer_class(
                 hierarchy, many=True, context=self.get_serializer_context()).data
@@ -408,6 +418,7 @@ class UnitConnectionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = UnitConnection.objects.all()
     serializer_class = UnitConnectionSerializer
 
+
 register_view(UnitConnectionViewSet, 'unit_connection')
 
 
@@ -435,7 +446,8 @@ class ServiceNodeViewSet(JSONAPIViewSet, viewsets.ReadOnlyModelViewSet):
     filter_fields = ['level', 'parent']
 
     def get_queryset(self):
-        queryset = super(ServiceNodeViewSet, self).get_queryset().prefetch_related('keywords', 'related_services', 'unit_counts', 'unit_counts__division')
+        queryset = super(ServiceNodeViewSet, self).get_queryset().prefetch_related(
+            'keywords', 'related_services', 'unit_counts', 'unit_counts__division')
         args = self.request.query_params
         if 'id' in args:
             id_list = args['id'].split(',')
@@ -444,6 +456,7 @@ class ServiceNodeViewSet(JSONAPIViewSet, viewsets.ReadOnlyModelViewSet):
             val = args['ancestor']
             queryset = queryset.by_ancestor(val)
         return queryset
+
 
 register_view(ServiceNodeViewSet, 'service_node')
 
@@ -458,10 +471,8 @@ class ServiceViewSet(JSONAPIViewSet, viewsets.ReadOnlyModelViewSet):
         if 'id' in args:
             id_list = args['id'].split(',')
             queryset = queryset.filter(id__in=id_list)
-        if 'ancestor' in args:
-            val = args['ancestor']
-            queryset = queryset.by_ancestor(val)
         return queryset.annotate(unit_count=Count('units', distinct=True))
+
 
 register_view(ServiceViewSet, 'service')
 
@@ -512,7 +523,7 @@ class UnitSerializer(TranslatedModelSerializer, munigeo_api.GeoModelSerializer,
         return result
 
     def _department_uuid(self, obj, field):
-        if obj.department is not None:
+        if getattr(obj, field) is not None:
             return getattr(obj, field).uuid
         return None
 
@@ -753,7 +764,7 @@ class UnitViewSet(munigeo_api.GeoModelAPIView, JSONAPIViewSet, viewsets.ReadOnly
 
         services = filters.get('service')
         if services is not None:
-            queryset = queryset.filter(services=services)
+            queryset = queryset.filter(services__in=services.split(',')).distinct()
 
         if 'division' in filters:
             # Divisions can be specified with form:
@@ -814,11 +825,25 @@ class UnitViewSet(munigeo_api.GeoModelAPIView, JSONAPIViewSet, viewsets.ReadOnly
                 bbox_geometry_filter = munigeo_api.build_bbox_filter(ref, val, 'geometry')
                 queryset = queryset.filter(Q(**bbox_filter) | Q(**bbox_geometry_filter))
 
+        if 'category' in filters:
+            services_and_service_nodes = filters.get('category', None).split(',')
+            service_ids = []
+            servicenode_ids = []
+            for ser_or_ser_node in services_and_service_nodes:
+                key = ser_or_ser_node.split(':')[0]
+                value = ser_or_ser_node.split(':')[1]
+                if key == 'service':
+                    service_ids.append(value)
+                elif key == 'service_node':
+                    servicenode_ids.append(value)
+            queryset = queryset.filter(Q(services__in=service_ids)
+                                       | Q(service_nodes__in=service_nodes_by_ancestors(servicenode_ids))).distinct()
+
         maintenance_organization = self.request.query_params.get('maintenance_organization')
         if maintenance_organization:
             queryset = queryset.filter(
-                Q(extensions__maintenance_organization=maintenance_organization) |
-                Q(extensions__additional_maintenance_organization=maintenance_organization))
+                Q(extensions__maintenance_organization=maintenance_organization)
+                | Q(extensions__additional_maintenance_organization=maintenance_organization))
 
         if 'observations' in self.include_fields:
             queryset = queryset.prefetch_related(
@@ -838,9 +863,9 @@ class UnitViewSet(munigeo_api.GeoModelAPIView, JSONAPIViewSet, viewsets.ReadOnly
         # These fields are included by default,
         # and only omitted if not part of an 'only' query param
         return (
-            self.only_fields is None or len(self.only_fields) == 0 or
-            field_name in self.only_fields or
-            field_name in self.include_fields)
+            self.only_fields is None or len(self.only_fields) == 0
+            or field_name in self.only_fields
+            or field_name in self.include_fields)
 
     def _add_content_disposition_header(self, response):
         if isinstance(response.accepted_renderer, KmlRenderer):
@@ -857,10 +882,11 @@ class UnitViewSet(munigeo_api.GeoModelAPIView, JSONAPIViewSet, viewsets.ReadOnly
         serializer = self.serializer_class(unit, context=self.get_serializer_context())
         return Response(serializer.data)
 
-    def list(self, request):
+    def list(self, request, **kwargs):
         response = super(UnitViewSet, self).list(request)
         response.add_post_render_callback(self._add_content_disposition_header)
         return response
+
 
 register_view(UnitViewSet, 'unit')
 
@@ -873,11 +899,15 @@ class SearchSerializer(serializers.Serializer):
     def _strip_context(self, context, model):
         if model == Unit:
             key = 'unit'
+        elif model == Service:
+            key = 'service'
         else:
             key = 'service_node'
         for spec in ['include', 'only']:
             if spec in context:
                 context[spec] = context[spec].get(key, [])
+        if 'only' in context and context['only'] == []:
+            context.pop('only')
         return context
 
     def get_result_serializer(self, model, instance):
@@ -905,6 +935,7 @@ class SearchSerializer(serializers.Serializer):
         data['object_type'] = model._meta.model_name
         data['score'] = search_result.score
         return data
+
 
 KML_REGEXP = re.compile(settings.KML_REGEXP)
 
@@ -955,11 +986,11 @@ class SearchViewSet(munigeo_api.GeoModelAPIView, viewsets.ViewSetMixin, generics
             self.only_fields['unit'].extend(['street_address', 'www'])
 
         if input_val:
-            queryset = (
-                queryset
-                .filter(autosuggest=input_val)
-                .filter_or(autosuggest_extra_searchwords=input_val)
-                .filter_or(autosuggest_exact__exact=input_val)
+            queryset = queryset.filter(
+                SQ(autosuggest=input_val)
+                | SQ(autosuggest_extra_searchwords=input_val)
+                | SQ(autosuggest_exact__exact=input_val)
+                | SQ(SQ(number=input_val) & SQ(autosuggest=input_val))
             )
         else:
             queryset = (
@@ -977,9 +1008,10 @@ class SearchViewSet(munigeo_api.GeoModelAPIView, viewsets.ViewSetMixin, generics
                 for q in muni_q_objects:
                     muni_q |= q
                 queryset = queryset.filter(
-                    SQ(muni_q |
-                       SQ(django_ct='services.servicenode') |
-                       SQ(django_ct='munigeo.address')))
+                    SQ(muni_q
+                        | SQ(django_ct='services.service')
+                        | SQ(django_ct='services.servicenode')
+                        | SQ(django_ct='munigeo.address')))
 
         service = request.query_params.get('service')
         if service:
@@ -1027,6 +1059,7 @@ class SearchViewSet(munigeo_api.GeoModelAPIView, viewsets.ViewSetMixin, generics
             context['include'] = self.include_fields
         return context
 
+
 register_view(SearchViewSet, 'search', base_name='search')
 
 
@@ -1036,8 +1069,8 @@ class AccessibilityRuleView(viewsets.ViewSetMixin, generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         rules, messages = accessibility_rules.get_data()
         return Response({
-            'rules': rules,
-            'messages': messages})
+            'rules': rules, 'messages': messages})
+
 
 register_view(AccessibilityRuleView, 'accessibility_rule', base_name='accessibility_rule')
 
@@ -1071,10 +1104,12 @@ class AdministrativeDivisionSerializer(munigeo_api.AdministrativeDivisionSeriali
 class AdministrativeDivisionViewSet(munigeo_api.AdministrativeDivisionViewSet):
     serializer_class = AdministrativeDivisionSerializer
 
+
 register_view(AdministrativeDivisionViewSet, 'administrative_division')
 
 
 class AddressViewSet(munigeo_api.AddressViewSet):
     serializer_class = munigeo_api.AddressSerializer
+
 
 register_view(AddressViewSet, 'address')
