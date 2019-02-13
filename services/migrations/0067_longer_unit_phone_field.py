@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('services', '0064_increase_unit_organizer_name_length'),
+        ('services', '0066_increase_unit_organizer_name_length'),
     ]
 
     operations = [

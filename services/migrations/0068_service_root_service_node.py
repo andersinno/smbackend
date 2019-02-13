@@ -9,7 +9,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('services', '0065_longer_unit_phone_field'),
+        ('services', '0067_longer_unit_phone_field'),
     ]
 
     operations = [

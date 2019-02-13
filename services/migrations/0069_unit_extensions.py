@@ -9,7 +9,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('services', '0066_service_root_service_node'),
+        ('services', '0068_service_root_service_node'),
     ]
 
     operations = [
