@@ -14,7 +14,6 @@ def read_config(name):
             'smbackend',
             'elasticsearch/{}.json'.format(name))))
 
-
 HAYSTACK_CONNECTIONS = {
     'default': {
         'ENGINE': 'multilingual_haystack.backends.MultilingualSearchEngine',

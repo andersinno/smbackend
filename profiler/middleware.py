@@ -40,7 +40,7 @@ class ProfilerMiddleware(object):
             args = (request,) + callback_args
             try:
                 return self.profiler.runcall(callback, *args, **callback_kwargs)
-            except Exception:
+            except:
                 # we want the process_exception middleware to fire
                 # https://code.djangoproject.com/ticket/12250
                 return

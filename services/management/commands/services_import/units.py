@@ -59,7 +59,6 @@ def _fetch_units():
         LOGGER.info("Fetching units")
     return pk_get('unit', params={'official': 'yes'})
 
-
 CONTRACT_TYPE_MAPPINGS = [
     ('MUNICIPALITY', 'SELF_PRODUCED', None, 'municipal_service'),
     ('MUNICIPALITY', 'PURCHASED_SERVICE', None, 'purchased_service'),
@@ -186,8 +185,6 @@ def _load_postcodes():
 
 
 def _get_department_root_from_syncher(syncher, department, department_id_to_uuid):
-    if department is None:
-        return None
     if department.level == 0:
         return department
     parent = syncher.get(department_id_to_uuid.get(department.parent_id))
@@ -263,20 +260,15 @@ def _import_unit(syncher, keyword_handler, info, dept_syncher,
 
     if not dept:
         LOGGER.warning("Missing department {} for unit {}".format(dept_id, obj.id))
-    elif obj.department_id != dept.id:
+    elif obj.department_id != dept_id:
         obj.department = dept
-        obj_changed = True
-
-    root_department = _get_department_root_from_syncher(dept_syncher, obj.department, department_id_to_uuid)
-    if ((root_department is None and obj.root_deparment_id is not None)
-            or (root_department is not None and root_department.id != obj.root_department_id)):
-        obj.root_department = root_department
+        obj.root_department = _get_department_root_from_syncher(dept_syncher, obj.department, department_id_to_uuid)
         obj_changed = True
 
     fields = ['address_zip', 'phone', 'email', 'fax', 'provider_type',
               'organizer_type', 'picture_url', 'picture_entrance_url',
               'accessibility_www', 'accessibility_phone', 'accessibility_email',
-              'streetview_entrance_url', 'organizer_name', 'organizer_business_id'
+              'streetview_entrance_url'
               ]
 
     contract_type = None
@@ -369,16 +361,6 @@ def _import_unit(syncher, keyword_handler, info, dept_syncher,
     if is_public != obj.public:
         obj_changed = True
         obj.public = is_public
-
-    maintenance_organization = muni_name
-    if obj.extensions is None:
-        obj.extensions = {}
-    if (obj.extensions.get('maintenance_organization') != maintenance_organization):
-        obj_changed = True
-        obj.extensions['maintenance_organization'] = maintenance_organization
-    if (obj.extensions.get('maintenance_group') is None):
-        obj_changed = True
-        obj.extensions['maintenance_group'] = 'kaikki'
 
     if obj_changed:
         if obj_created:
@@ -527,7 +509,7 @@ def _import_unit_connections(obj, info, obj_changed, update_fields):
 
         for i, conn in enumerate(info['connections']):
             c = UnitConnection(unit=obj)
-            save_translated_field(c, 'name', conn, 'name', max_length=600)
+            save_translated_field(c, 'name', conn, 'name', max_length=400)
             save_translated_field(c, 'www', conn, 'www')
             section_type = [val for val, str_val in SECTION_TYPES if str_val == conn['section_type']][0]
             assert section_type

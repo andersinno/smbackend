@@ -26,7 +26,6 @@ install:
   - pip install pytest-cov -r requirements.txt
 
 script:
-  - flake8
   - pytest --cov=. --hypothesis-profile=ci
 
 after_success: codecov

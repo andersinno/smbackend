@@ -1,27 +1,21 @@
 import pytest
 from rest_framework.test import APIClient
-from services.models import Service, Unit, Department, UnitServiceDetails
+from services.models import Service, Unit, Department
 from observations.models import ObservableProperty, CategoricalObservation, AllowedValue, UserOrganization
 import datetime as d
 from django.contrib.auth.models import User
-from munigeo.models import Municipality
-
 
 @pytest.fixture
 def api_client():
     return APIClient()
 
-
 @pytest.mark.django_db
 @pytest.fixture
 def user():
-    USERNAME = 'test_user'
-    PASSWORD = 'test_password'
-    MUNICIPALITY = 'helsinki'
+    USERNAME='test_user'
+    PASSWORD='test_password'
     user = User.objects.create(username=USERNAME)
-    municipality = Municipality.objects.create(id=MUNICIPALITY, name=MUNICIPALITY)
-    organization = Department.objects.create(name_fi='test_org', municipality=municipality,
-                                             uuid='063c6150-ccc7-4886-b44b-ecee7670d065')
+    organization = Department.objects.create(name_fi='test_org', id=1)
     UserOrganization.objects.create(user=user, organization=organization)
     user.set_password(PASSWORD)
     user.save()
@@ -42,6 +36,7 @@ def service():
     return Service.objects.create(
         id=1,
         name='skiing',
+        unit_count=1,
         last_modified_time=d.datetime.now())
 
 
@@ -51,12 +46,11 @@ def unit(service, organization):
     unit = Unit.objects.create(
         id=1,
         name='skiing place',
-        last_modified_time=d.datetime.now(),
+        modified_time=d.datetime.now(),
         provider_type=1,
         department=organization)
-    UnitServiceDetails(unit=unit, service=service).save()
+    unit.services.add(service)
     return unit
-
 
 @pytest.mark.django_db
 @pytest.fixture
@@ -77,7 +71,6 @@ def categorical_observations(unit, observable_property):
             unit=unit,
             property=observable_property,
             value='closed')]
-
 
 @pytest.mark.django_db
 @pytest.fixture
@@ -107,7 +100,6 @@ def observable_property(service, unit):
         property=p
     )
     return p
-
 
 @pytest.mark.django_db
 @pytest.fixture

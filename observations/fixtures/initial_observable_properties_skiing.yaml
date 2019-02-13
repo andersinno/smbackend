@@ -1,13 +1,11 @@
 - model: observations.ObservableProperty
   pk: ski_trail_condition
   fields:
-    name_fi: Hiihtoladun kunto
-    name_en: Ski trail condition
-    name_sv: TODO
+    name: Ski trail condition
     observation_type: observations.CategoricalObservation
     services:
-      - 191
-      - 318
+      - 33483
+      - 33492
 - model: observations.AllowedValue
   fields:
     identifier: closed
@@ -92,13 +90,11 @@
 - model: observations.ObservableProperty
   pk: ski_trail_maintenance
   fields:
-    name_fi: Hiihtoladun ylläpitotilanne
-    name_en: Ski trail maintenance status
-    name_sv: TODO
+    name: Ski trail maintenance status
     observation_type: observations.CategoricalObservation
     services:
-      - 191
-      #- 318
+      - 33483
+      #- 33492
 - model: observations.AllowedValue
   fields:
     identifier: maintenance_finished

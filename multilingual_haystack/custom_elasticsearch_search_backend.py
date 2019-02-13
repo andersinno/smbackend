@@ -2,7 +2,6 @@ import collections
 from haystack.backends import elasticsearch_backend as es_backend
 from haystack.query import SearchQuerySet
 
-
 def update(d, u):
     """
     Recursively update dict d with
@@ -16,14 +15,13 @@ def update(d, u):
             d[k] = u[k]
     return d
 
-
 class CustomEsSearchBackend(es_backend.ElasticsearchSearchBackend):
     """ A slight modification of the default Haystack elasticsearch
     backend which allows custom mapping configurations for specified
     fields in the connection options.
 
     Configure with a MAPPING key in the connection settings
-    dictionary, containing a dictionary of
+    dictionary, containing a dictionary of 
     field-name to mapping configurations.
     """
     def __init__(self, connection_alias, **connection_options):
@@ -68,7 +66,6 @@ class CustomEsSearchBackend(es_backend.ElasticsearchSearchBackend):
         kwargs['query'] = function_score_query
         return kwargs
 
-
 class CustomEsSearchQuery(es_backend.ElasticsearchSearchQuery):
     def __init__(self, **kwargs):
         super(CustomEsSearchQuery, self).__init__(**kwargs)
@@ -88,12 +85,10 @@ class CustomEsSearchQuery(es_backend.ElasticsearchSearchQuery):
         clone.decay_functions = self.decay_functions[:]
         return clone
 
-
 class CustomEsSearchQuerySet(SearchQuerySet):
     """
     usage example:
-    SearchQuerySet().filter(text='konsertti').decay(
-    {'gauss': {'end_time' : {'origin': '2014-05-07', 'scale' : '10d' }}}
+    SearchQuerySet().filter(text='konsertti').decay({'gauss': {'end_time' : {'origin': '2014-05-07', 'scale' : '10d' }}}
 
     another usage example via manage.py shell:
     >>> from django.utils import translation

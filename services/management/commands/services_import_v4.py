@@ -12,8 +12,7 @@ from django.utils.translation import activate, get_language
 
 from services.management.commands.services_import.aliases import import_aliases
 from services.management.commands.services_import.departments import import_departments
-from services.management.commands.services_import.services import (
-    import_services, update_service_node_counts, update_service_root_service_nodes)
+from services.management.commands.services_import.services import import_services, update_service_node_counts
 from services.management.commands.services_import.units import import_units
 
 from munigeo.models import AdministrativeDivision
@@ -140,8 +139,7 @@ class Command(BaseCommand):
 
     @db.transaction.atomic
     def import_services(self):
-        import_services(logger=self.logger, noop=False, importer=self)
-        update_service_root_service_nodes()
+        return import_services(logger=self.logger, noop=False, importer=self)
 
     def handle(self, **options):
         self.options = options
