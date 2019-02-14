@@ -398,7 +398,7 @@ class UnitImporter:
             }
             names = {
                 'name_{}'.format(language):
-                    get_localized_value_with_fallback(descriptions, language) or
+                    get_localized_value_with_fallback(descriptions, language) or  # NOQA
                     get_localized_value_with_fallback(type_names, language)
                 for language in LANGUAGES
             }
@@ -425,7 +425,7 @@ class UnitImporter:
         names = defaultdict(str)
 
         for language in LANGUAGES:
-            names[language] = get_localized_value_with_fallback(opening_hours_datum.get('kuvaus_kieliversiot', {}), language)
+            names[language] = get_localized_value_with_fallback(opening_hours_datum.get('kuvaus_kieliversiot', {}), language)  # NOQA
 
         for language in LANGUAGES:
             if not names[language]:
