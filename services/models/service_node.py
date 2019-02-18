@@ -41,7 +41,7 @@ class ServiceNode(MPTTModel):
             if o.period_enabled), False)
 
     class Meta:
-        ordering = ['-pk']
+        ordering = ['name']
 
 
 class ServiceNodeUnitCount(models.Model):
