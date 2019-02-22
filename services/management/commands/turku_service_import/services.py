@@ -4,6 +4,7 @@ import pytz
 from munigeo.importer.sync import ModelSyncher
 
 from services.management.commands.services_import.keyword import KeywordHandler
+from services.management.commands.services_import.services import update_service_root_service_nodes
 from services.management.commands.turku_service_import.utils import get_turku_resource, set_syncher_object_field, \
     set_syncher_tku_translated_field
 from services.models import ServiceNode, Service
@@ -139,4 +140,5 @@ class ServiceImporter:
 
 def import_services(**kwargs):
     service_importer = ServiceImporter(**kwargs)
-    return service_importer.import_services()
+    service_importer.import_services()
+    update_service_root_service_nodes()
