@@ -9,6 +9,7 @@ from collections import defaultdict
 from operator import itemgetter
 
 from django import db
+from django.db.models import Q
 from django.conf import settings
 from django.contrib.gis.geos import Point, Polygon
 from django.contrib.gis.gdal import SpatialReference, CoordTransform
@@ -565,10 +566,18 @@ def _import_unit_sources(obj, info, obj_changed, update_fields):
         obj.identifiers.all().delete()
         if id_hash is not None:
             for uid in info['sources']:
+                namespace = uid.get('source')
+                value = uid.get('id')
                 ui = UnitIdentifier(unit=obj)
-                ui.namespace = uid.get('source')
-                ui.value = uid.get('id')
-                ui.save()
+                ui.namespace = namespace
+                ui.value = value
+                if UnitIdentifier.objects.filter(
+                    Q(unit=obj, namespace=namespace) |  # noqa
+                    Q(namespace=namespace, value=value)
+                ).exists():
+                    continue
+                else:
+                    ui.save()
 
         obj.identifier_hash = id_hash
         obj_changed = True
