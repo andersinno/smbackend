@@ -244,13 +244,6 @@ class ServiceNodeSerializer(TranslatedModelSerializer, MPTTModelSerializer, JSON
     def __init__(self, *args, **kwargs):
         super(ServiceNodeSerializer, self).__init__(*args, **kwargs)
 
-    def _get_unit_counts(self, obj):
-        if not obj.children.exists():
-            return obj.units.count()
-        else:
-            child_count = sum([self._get_unit_counts(sub_child) for sub_child in obj.children.all()])
-            return child_count
-
     def to_representation(self, obj):
         ret = super(ServiceNodeSerializer, self).to_representation(obj)
         include_fields = self.context.get('include', [])
@@ -272,7 +265,10 @@ class ServiceNodeSerializer(TranslatedModelSerializer, MPTTModelSerializer, JSON
         ret['unit_count'] = dict(municipality=dict((
             (x.division.name_fi.lower() if x.division else '_unknown', x.count)
             for x in obj.unit_counts.all())))
-        ret['unit_count']['total'] = self._get_unit_counts(obj)
+        total = 0
+        for _, part in ret['unit_count']['municipality'].items():
+            total += part
+        ret['unit_count']['total'] = total
         return ret
 
     def root_service_nodes(self, obj):
