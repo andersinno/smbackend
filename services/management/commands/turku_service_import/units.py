@@ -28,6 +28,7 @@ ROOT_FIELD_MAPPING = {
 EXTRA_INFO_FIELD_MAPPING = {
     '3': {'kuvaus_kieliversiot': 'www'},
     '6': {'kuvaus_kieliversiot': 'www'},
+    '5': {'nimi': 'picture_url'},
 }
 
 SERVICE_TRANSLATIONS = {
