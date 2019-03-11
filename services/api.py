@@ -457,22 +457,6 @@ class ServiceNodeViewSet(JSONAPIViewSet, viewsets.ReadOnlyModelViewSet):
             queryset = queryset.by_ancestor(val)
         return queryset
 
-    def list(self, request, *args, **kwargs):
-        args = self.request.query_params
-        response = super(ServiceNodeViewSet, self).list(request, args, kwargs)
-        if 'parent' in args:
-            # Add units to response that belongs to main category as well, and not
-            # just sub-categories(service_nodes). E.g when making request to
-            # service_node "1_1", add all the units belonging to 1_1 too. So
-            # final response becomes units belonging to 1_1 only + units belonging
-            # to children of 1_1.
-            root_node = ServiceNode.objects.get(id=args['parent'])
-            extra_units = Unit.objects \
-                .filter(service_nodes=root_node) \
-                .exclude(service_nodes__in=root_node.children.all())
-            units = UnitSerializer(extra_units, many=True)
-            response.data['results'] += units.data
-        return response
 
 register_view(ServiceNodeViewSet, 'service_node')
 
