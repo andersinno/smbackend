@@ -244,35 +244,6 @@ class UnitImporter:
     def _handle_service_descriptions(self, obj, unit_data):
         description_data = unit_data.get('kuvaus_kieliversiot', {})
         descriptions = {lang: nl2br(description_data.get(lang, '')) for lang in ('fi', 'sv', 'en')}
-        touched = {
-            'fi': False,
-            'sv': False,
-            'en': False,
-        }
-
-        for service_offer in unit_data.get('palvelutarjoukset', []):
-            for service_data in service_offer.get('palvelut', []):
-
-                service_name = service_data.get('nimi_kieliversiot', {})
-                for language, value in service_name.items():
-                    # Make sure that we have a string as the default value
-                    if not descriptions[language]:
-                        descriptions[language] = ''
-
-                    if not touched[language]:
-                        # Clean the text
-                        descriptions[language] = clean_text(descriptions[language], '')
-                        # Add some padding if there is a description already
-                        if descriptions[language]:
-                            descriptions[language] += '\n\n'
-                        descriptions[language] += SERVICE_TRANSLATIONS[language] + ':\n'
-                    else:
-                        # Add newline between services
-                        descriptions[language] += '\n'
-
-                    descriptions[language] += '- ' + value
-                    touched[language] = True
-
         set_syncher_tku_translated_field(obj, 'description', descriptions, clean=False)
 
     def _handle_opening_hours(self, obj, unit_data):
