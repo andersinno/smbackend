@@ -13,7 +13,7 @@ from munigeo.models import Municipality
 from services.management.commands.services_import.services import update_service_node_counts
 from services.management.commands.turku_service_import.utils import (
     get_turku_resource, nl2br, set_syncher_object_field, set_syncher_tku_translated_field,
-    get_weekday_str, get_localized_value_with_fallback)
+    get_weekday_str, get_localized_value)
 from services.management.commands.utils.text import clean_text
 from services.models import Service, ServiceNode, Unit, UnitServiceDetails, UnitIdentifier, UnitConnection
 
@@ -370,8 +370,8 @@ class UnitImporter:
             }
             names = {
                 'name_{}'.format(language):
-                    get_localized_value_with_fallback(descriptions, language) or  # NOQA
-                    get_localized_value_with_fallback(type_names, language)
+                    get_localized_value(descriptions, language) or  # NOQA
+                    get_localized_value(type_names, language)
                 for language in LANGUAGES
             }
 
@@ -397,7 +397,7 @@ class UnitImporter:
         names = defaultdict(str)
 
         for language in LANGUAGES:
-            names[language] = get_localized_value_with_fallback(opening_hours_datum.get('kuvaus_kieliversiot', {}), language)  # NOQA
+            names[language] = get_localized_value(opening_hours_datum.get('kuvaus_kieliversiot', {}), language)  # NOQA
 
         for language in LANGUAGES:
             if not names[language]:
