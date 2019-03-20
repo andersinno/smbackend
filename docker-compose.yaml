@@ -1,0 +1,33 @@
+version: '3.5'
+services:
+  db:
+    image: skywidesoft/postgis-hstore
+    environment:
+       - POSTGRES_USER=smbackend
+       - POSTGRES_PASSWORD=smbackend
+       - POSTGRES_DB=smbackend
+    volumes:
+      - db_data:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+  elasticsearch:
+    build: docker/elasticsearch/
+  api:
+    build: .
+    command: bash -c 'tail -f /dev/null'
+    entrypoint: /entrypoint/docker-entrypoint.sh
+    volumes:
+      - .:/code
+      - /code/venv # Ignore the venv folder by mounting an empty folder in the container
+    environment:
+      - DEBUG=1
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+
+volumes:
+    db_data:
+
+
