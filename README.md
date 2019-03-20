@@ -123,6 +123,32 @@ HAYSTACK_CONNECTIONS = {
 }
 ```
 
+## Voikko
+
+Voikko is a spelling and grammar checker, hyphenator and collection
+of related linguistic data for Finnish language.
+
+When indexing entries using the `rebuild_index` command the `voikko` library and Elasticsearch plugin
+is required in order for the indexing to work.
+
+To get Voikko working, the following steps needs to be taken:
+1. Install the Voikko OS library, on Debian/Ubuntu you do this by running `apt install libvoikko1`
+2. Install the Elasticsearch Voikko plugin, this can be done by running the following command
+    * Voikko required the Morpho dict to be installed, depending on the version of libvoikko you will either
+     need http://www.puimula.org/htp/testing/voikko-snapshot/dict-morpho.zip for libvoikko < 4 or
+     http://www.puimula.org/htp/testing/voikko-snapshot-v5/dict-morpho.zip for libvoikko >= 4
+     install it using the following command:
+    ```
+    wget <LINK_TO_MORPHO> --quiet -O /tmp/dict-morpho.zip \
+    && mkdir -p /usr/lib/voikko \
+    && unzip -q /tmp/dict-morpho.zip -d /usr/lib/voikko \
+    && rm /tmp/dict-morpho.zip
+    ```
+    * Install the Voikko Elasticsearch plugin with `/usr/share/elasticsearch/bin/plugin --install fi.evident.elasticsearch/elasticsearch-analysis-voikko/0.3.0`
+    * Symlink the libvoikko to 
+This is a requirement for Elasticsearch and not for the application itself, so no changes needs
+to be made to the application settings.
+
 
 Troubleshooting
 ---------------
