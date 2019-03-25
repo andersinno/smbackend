@@ -13,6 +13,12 @@ UTC_TIMEZONE = pytz.timezone('UTC')
 
 SERVICE_AS_SERVICE_NODE_PREFIX = 'service_'
 
+BLACKLISTED_SERVICE_NODES = [
+    "2_1",
+    "2_2",
+    "2_3",
+]
+
 
 class ServiceImporter:
     nodesyncher = ModelSyncher(ServiceNode.objects.all(), lambda obj: obj.id)
@@ -32,6 +38,8 @@ class ServiceImporter:
 
         tree = self._build_servicetree(service_classes)
         for parent_node in tree:
+            if parent_node['koodi'] in BLACKLISTED_SERVICE_NODES:
+                continue
             self._handle_service_node(parent_node, keyword_handler)
         self.nodesyncher.finish()
 
