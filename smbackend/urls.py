@@ -35,8 +35,8 @@ urlpatterns = [
     # url(r'^admin/', include(admin.site.urls)),
 
     url(r'^open311/', views.post_service_request, name='services'),
-    url(r'^v2/', include(router.urls)),
-    url(r'^v2/api-token-auth/', obtain_auth_token, name='api-auth-token'),
-    url(r'^v2/redirect/unit/', UnitRedirectViewSet.as_view({'get': 'list'})),
+    url(r'^api/v2/', include(router.urls)),
+    url(r'^api/v2/api-token-auth/', obtain_auth_token, name='api-auth-token'),
+    url(r'^api/v2/redirect/unit/', UnitRedirectViewSet.as_view({'get': 'list'})),
     url(r'', include(shortcutter_urls)),
 ]
